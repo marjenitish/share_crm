@@ -16,23 +16,26 @@ import { Badge } from '@/components/ui/badge';
 import { Pencil, Search, Eye } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { format } from 'date-fns';
-
+import { useRouter } from 'next/navigation';
+import { Customer } from '../../supabase/types';
 interface CustomersTableProps {
   onEdit: (customer: any) => void;
   onView: (customer: any) => void;
-  refreshKey: number;
+  refreshKey: number; // Add this prop
   selectedCustomers: string[];
   onSelectedCustomersChange: (ids: string[]) => void;
 }
 
 export function CustomersTable({
   onEdit,
-  onView,
+  // onView, // Removed as we are navigating to a new page
   refreshKey,
   selectedCustomers,
   onSelectedCustomersChange,
 }: CustomersTableProps) {
-  const [customers, setCustomers] = useState<any[]>([]);
+  const router = useRouter();
+
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -60,7 +63,7 @@ export function CustomersTable({
     fetchCustomers();
   }, [refreshKey]);
 
-  const filteredCustomers = customers.filter((customer) => {
+  const filteredCustomers = customers.filter((customer: Customer) => {
     const searchString = searchTerm.toLowerCase();
     return (
       customer.surname.toLowerCase().includes(searchString) ||
@@ -172,7 +175,7 @@ export function CustomersTable({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => onView(customer)}
+                      onClick={() => router.push(`/dashboard/customers/${customer.id}`)}
                     >
                       <Eye className="h-4 w-4" />
                       <span className="sr-only">View</span>

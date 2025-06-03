@@ -8,11 +8,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Customer } from '../../supabase/types';
 
 interface CustomerDetailsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer: any;
+  customer: Customer | null;
 }
 
 export function CustomerDetails({

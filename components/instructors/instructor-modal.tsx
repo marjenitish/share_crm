@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { createBrowserClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const instructorSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -30,7 +32,7 @@ const instructorSchema = z.object({
   specialty: z.string().min(1, 'Specialty is required'),
   address: z.string().min(1, 'Address is required'),
   description: z.string().optional(),
-  imageLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  image: z.instanceof(File).optional(),
 });
 
 type InstructorFormValues = z.infer<typeof instructorSchema>;
@@ -46,8 +48,10 @@ export function InstructorModal({
   open,
   onOpenChange,
   instructor,
-  onSubmit,
+  onSubmit
 }: InstructorModalProps) {
+  const supabase = createBrowserClient();
+  const { toast } = useToast();
   const form = useForm<InstructorFormValues>({
     resolver: zodResolver(instructorSchema),
     defaultValues: {
@@ -57,9 +61,40 @@ export function InstructorModal({
       specialty: '',
       address: '',
       description: '',
-      imageLink: '',
+ image: undefined
     },
   });
+
+  const handleFormSubmit = async (data: InstructorFormValues) => {
+    let imageLink = instructor?.image_link || '';
+
+    if (data.image) {
+      const file = data.image;
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data: uploadData, error } = await supabase.storage
+        .from('instructor-images')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: 'Image Upload Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('instructor-images')
+        .getPublicUrl(uploadData.path);
+      imageLink = publicUrlData.publicUrl;
+    }
+
+    // Exclude the File object from the data passed to onSubmit
+    const { image, ...formData } = data;
+    onSubmit({ ...formData, imageLink } as InstructorFormValues);
+  };
 
   useEffect(() => {
     if (instructor) {
@@ -70,7 +105,7 @@ export function InstructorModal({
         specialty: instructor.specialty,
         address: instructor.address,
         description: instructor.description || '',
-        imageLink: instructor.image_link || '',
+        // imageLink is not reset here as the upload field is separate
       });
     } else {
       form.reset({
@@ -80,7 +115,7 @@ export function InstructorModal({
         specialty: '',
         address: '',
         description: '',
-        imageLink: '',
+        image: undefined,
       });
     }
   }, [instructor, form]);
@@ -94,7 +129,7 @@ export function InstructorModal({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -178,16 +213,14 @@ export function InstructorModal({
 
             <FormField
               control={form.control}
-              name="imageLink"
-              render={({ field }) => (
+              name="image"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Profile Image URL</FormLabel>
+                  <FormLabel>Profile Image Upload</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="https://example.com/image.jpg"
-                      type="url"
-                      {...field}
-                    />
+                      type="file"
+                      onChange={(event) => onChange(event.target.files && event.target.files[0])}/>
                   </FormControl>
                   <FormDescription>
                     Enter a valid URL for the instructor's profile image.

@@ -85,6 +85,7 @@ export function InstructorsTable({ onEdit, onView, refreshKey }: InstructorsTabl
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+ <TableHead>S.N.</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Contact No</TableHead>
               <TableHead>Specialty</TableHead>
@@ -93,9 +94,24 @@ export function InstructorsTable({ onEdit, onView, refreshKey }: InstructorsTabl
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredInstructors.map((instructor) => (
+            
+            {filteredInstructors.map((instructor, index) => (              
               <TableRow key={instructor.id}>
-                <TableCell className="font-medium">{instructor.name}</TableCell>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-3">
+                    {instructor.image_link ? (
+                      <img
+                        src={instructor.image_link}
+                        alt={instructor.name}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-lg font-semibold">{instructor.name.charAt(0).toUpperCase()}</div>
+                    )}
+                    {instructor.name}
+                  </div>
+                </TableCell>
                 <TableCell>{instructor.email}</TableCell>
                 <TableCell>{instructor.contact_no}</TableCell>
                 <TableCell>{instructor.specialty}</TableCell>
@@ -124,7 +140,7 @@ export function InstructorsTable({ onEdit, onView, refreshKey }: InstructorsTabl
             ))}
             {filteredInstructors.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center">
+                <TableCell colSpan={7} className="text-center">
                   No instructors found
                 </TableCell>
               </TableRow>

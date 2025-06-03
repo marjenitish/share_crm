@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { Customer } from '../../supabase/types';
 const customerSchema = z.object({
   surname: z.string().min(1, 'Surname is required'),
   firstName: z.string().min(1, 'First name is required'),
@@ -44,8 +45,8 @@ const customerSchema = z.object({
   paqForm: z.boolean().default(false),
   australianCitizen: z.boolean().optional(),
   languageOtherThanEnglish: z.string().optional(),
-  englishProficiency: z.enum(['very_well', 'well', 'not_well', 'not_at_all']).optional(),
-  indigenousStatus: z.enum(['yes', 'no', 'prefer_not_to_say']).optional(),
+  englishProficiency: z.enum(['Very Well', 'Well', 'Not Well', 'Not at All']).optional().or(z.literal('')),
+  indigenousStatus: z.enum(['Yes', 'No', 'Prefer not to say']).optional().or(z.literal('')),
   reasonForClass: z.string().optional(),
   howDidYouHear: z.string().optional(),
   occupation: z.string().optional(),
@@ -54,7 +55,7 @@ const customerSchema = z.object({
   nextOfKinMobile: z.string().optional(),
   nextOfKinPhone: z.string().optional(),
   equipmentPurchased: z.array(z.string()).default([]),
-  status: z.enum(['active', 'inactive']).default('active'),
+  status: z.enum(['Active', 'Inactive']).default('Active'),
 });
 
 type CustomerFormValues = z.infer<typeof customerSchema>;
@@ -62,7 +63,7 @@ type CustomerFormValues = z.infer<typeof customerSchema>;
 interface CustomerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  customer?: any;
+  customer?: Customer;
   onSubmit: (data: CustomerFormValues) => void;
 }
 
@@ -89,8 +90,8 @@ export function CustomerModal({
       paqForm: false,
       australianCitizen: false,
       languageOtherThanEnglish: '',
-      englishProficiency: 'well',
-      indigenousStatus: 'prefer_not_to_say',
+      englishProficiency: '',
+      indigenousStatus: '',
       reasonForClass: '',
       howDidYouHear: '',
       occupation: '',
@@ -99,7 +100,7 @@ export function CustomerModal({
       nextOfKinMobile: '',
       nextOfKinPhone: '',
       equipmentPurchased: [],
-      status: 'active',
+      status: 'Active',
     },
   });
 
@@ -120,8 +121,8 @@ export function CustomerModal({
         paqForm: customer.paq_form,
         australianCitizen: customer.australian_citizen,
         languageOtherThanEnglish: customer.language_other_than_english,
-        englishProficiency: customer.english_proficiency,
-        indigenousStatus: customer.indigenous_status,
+        englishProficiency: customer.english_proficiency || '',
+        indigenousStatus: customer.indigenous_status || '',
         reasonForClass: customer.reason_for_class,
         howDidYouHear: customer.how_did_you_hear,
         occupation: customer.occupation,
@@ -130,7 +131,7 @@ export function CustomerModal({
         nextOfKinMobile: customer.next_of_kin_mobile,
         nextOfKinPhone: customer.next_of_kin_phone,
         equipmentPurchased: customer.equipment_purchased || [],
-        status: customer.status,
+        status: customer.status || 'Active',
       });
     } else {
       form.reset({
@@ -148,8 +149,8 @@ export function CustomerModal({
         paqForm: false,
         australianCitizen: false,
         languageOtherThanEnglish: '',
-        englishProficiency: 'well',
-        indigenousStatus: 'prefer_not_to_say',
+        englishProficiency: '',
+        indigenousStatus: '',
         reasonForClass: '',
         howDidYouHear: '',
         occupation: '',
@@ -158,7 +159,7 @@ export function CustomerModal({
         nextOfKinMobile: '',
         nextOfKinPhone: '',
         equipmentPurchased: [],
-        status: 'active',
+        status: 'Active',
       });
     }
   }, [customer, form]);
@@ -402,10 +403,10 @@ export function CustomerModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="very_well">Very Well</SelectItem>
-                        <SelectItem value="well">Well</SelectItem>
-                        <SelectItem value="not_well">Not Well</SelectItem>
-                        <SelectItem value="not_at_all">Not at All</SelectItem>
+                        <SelectItem value="Very Well">Very Well</SelectItem>
+                        <SelectItem value="Well">Well</SelectItem>
+                        <SelectItem value="Not Well">Not Well</SelectItem>
+                        <SelectItem value="Not at All">Not at All</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -429,9 +430,9 @@ export function CustomerModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="yes">Yes</SelectItem>
-                        <SelectItem value="no">No</SelectItem>
-                        <SelectItem value="prefer_not_to_say">
+                        <SelectItem value="Yes">Yes</SelectItem>
+                        <SelectItem value="No">No</SelectItem>
+                        <SelectItem value="Prefer not to say">
                           Prefer not to say
                         </SelectItem>
                       </SelectContent>
@@ -563,8 +564,8 @@ export function CustomerModal({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

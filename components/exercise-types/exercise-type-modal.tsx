@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { createBrowserClient } from '@/lib/supabase/client';
 
 const exerciseTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -28,7 +30,7 @@ const exerciseTypeSchema = z.object({
   whatToBring: z.string().transform((val) => val.split('\n').filter(Boolean)),
   duration: z.string().min(1, 'Duration is required'),
   cost: z.number().min(0, 'Cost must be 0 or greater'),
-  imageLink: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  image: z.instanceof(File).optional(),
 });
 
 type ExerciseTypeFormValues = z.infer<typeof exerciseTypeSchema>;
@@ -46,6 +48,8 @@ export function ExerciseTypeModal({
   exerciseType,
   onSubmit,
 }: ExerciseTypeModalProps) {
+  const supabase = createBrowserClient();
+  const [isUploading, setIsUploading] = useState(false);
   const form = useForm<ExerciseTypeFormValues>({
     resolver: zodResolver(exerciseTypeSchema),
     defaultValues: {
@@ -54,9 +58,43 @@ export function ExerciseTypeModal({
       whatToBring: '',
       duration: '60',
       cost: 0,
-      imageLink: '',
+      image: undefined,
     },
   });
+
+  const { toast } = useToast();
+
+  const handleFormSubmit = async (data: ExerciseTypeFormValues) => {
+    let imageLink = exerciseType?.image_link || '';
+
+    if (data.image) {
+      setIsUploading(true);
+      const file = data.image;
+      const fileName = `${Date.now()}-${file.name}`;
+      const { data: uploadData, error } = await supabase.storage
+        .from('exercise-type-images')
+        .upload(fileName, file);
+
+      if (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: 'Image Upload Failed',
+          description: error.message,
+          variant: 'destructive',
+        });
+        setIsUploading(false);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('exercise-type-images')
+        .getPublicUrl(uploadData.path);
+      imageLink = publicUrlData.publicUrl;
+      setIsUploading(false);
+    }
+
+    onSubmit({ ...data, imageLink: imageLink } as ExerciseTypeFormValues);
+  };
 
   useEffect(() => {
     if (exerciseType) {
@@ -64,19 +102,11 @@ export function ExerciseTypeModal({
         name: exerciseType.name,
         description: exerciseType.description,
         whatToBring: exerciseType.what_to_bring?.join('\n') || '',
-        duration: exerciseType.duration,
-        cost: exerciseType.cost,
-        imageLink: exerciseType.image_link || '',
+        duration: exerciseType.duration.toString(), // Ensure duration is string for input type="number"
+        cost: exerciseType.cost, 
       });
     } else {
-      form.reset({
-        name: '',
-        description: '',
-        whatToBring: '',
-        duration: '60',
-        cost: 0,
-        imageLink: '',
-      });
+      form.reset(); // Reset to default values when no exerciseType is provided
     }
   }, [exerciseType, form]);
 
@@ -89,7 +119,7 @@ export function ExerciseTypeModal({
           </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -124,15 +154,14 @@ export function ExerciseTypeModal({
 
             <FormField
               control={form.control}
-              name="imageLink"
-              render={({ field }) => (
+              name="image"
+              render={({ field: { value, onChange, ...fieldProps } }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>Image Upload</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="https://example.com/image.jpg"
-                      type="url"
-                      {...field}
+                    <Input
+                      type="file"
+                      onChange={(event) => onChange(event.target.files && event.target.files[0])}
                     />
                   </FormControl>
                   <FormMessage />
@@ -200,7 +229,7 @@ export function ExerciseTypeModal({
               >
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button type="submit" disabled={isUploading}>
                 {exerciseType ? 'Update' : 'Create'}
               </Button>
             </div>

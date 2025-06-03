@@ -27,12 +27,12 @@ export async function middleware(request: NextRequest) {
   }
 
   // Admin routes: if user is logged in but not an admin and tries to access admin routes, redirect to protected
-  if (user && pathname.startsWith('/admin')) {
-    const userRole = await getCurrentUserRole();
-    if (userRole !== 'admin') {
-      return NextResponse.redirect(new URL('/protected?redirect_to=/admin', request.url));
-    }
-  }
+  // if (user && pathname.startsWith('/admin')) {
+  //   const userRole = await getCurrentUserRole();
+  //   if (userRole !== 'admin') {
+  //     return NextResponse.redirect(new URL('/protected?redirect_to=/admin', request.url));
+  //   }
+  // }
 
   return response;
 }
